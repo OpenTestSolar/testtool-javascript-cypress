@@ -18,4 +18,4 @@ jobs:
       - name: Validate metadata
         run: |
           pip install -U solar-registry
-          solar-registry validate jest
+          solar-registry validate cypress

@@ -28,17 +28,17 @@ jobs:
       with:
         version: 9
     - run: |
-        cd jest
+        cd cypress
         pnpm install
     - name: Eslint check
       run: |
-        cd jest
+        cd cypress
         pnpm run check
     - name: Run unit tests
       run: |
-        cd jest
+        cd cypress
         pnpm run test
     - run: |
-        cd jest
+        cd cypress
         pnpm run build
     

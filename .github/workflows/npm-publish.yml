@@ -16,13 +16,13 @@ jobs:
         with:
           version: 9
       - run: |
-          cd jest
+          cd cypress
           pnpm install
       - run: |
-          cd jest
+          cd cypress
           pnpm run test
       - run: |
-          cd jest
+          cd cypress
           pnpm run build
 
   publish-npm:
@@ -38,13 +38,13 @@ jobs:
         with:
           version: 9
       - run: |
-          cd jest
+          cd cypress
           pnpm install
       - run: |
-          cd jest
+          cd cypress
           pnpm run build
       - run: |
-          cd jest
+          cd cypress
           pnpm publish --no-git-checks
         env:
           NODE_AUTH_TOKEN: ${{secrets.NPM_TOKEN}}
@@ -63,6 +63,6 @@ jobs:
           git config --global user.name 'asiazhang'
           git config --global user.email 'asiazhang2002@gmail.com'
           pip install solar-registry
-          solar-registry pull-request jest
+          solar-registry pull-request cypress
         env:
           GH_TOKEN: ${{ secrets.TESTSOLAR_TOKEN }}

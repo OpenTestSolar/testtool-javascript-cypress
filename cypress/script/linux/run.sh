@@ -9,4 +9,4 @@ echo "${TESTSOLAR_WORKSPACE}"
 
 /usr/local/bin/testtools_sdk version
 
-/usr/local/bin/testtools_sdk serve --tool jest --file-report-mode
+/usr/local/bin/testtools_sdk serve --tool cypress --file-report-mode
