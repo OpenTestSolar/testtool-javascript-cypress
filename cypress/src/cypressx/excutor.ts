@@ -26,7 +26,7 @@ export async function runTestCase(runParamFile: string): Promise<void> {
     // 生成 json 文件名称
     const jsonName = path.replace(/\//g, "_") + ".json";
 
-    const { command, testIdentifiers } = generateCommands(
+    const { command } = generateCommands(
       path,
       testcases,
       jsonName,
@@ -36,16 +36,10 @@ export async function runTestCase(runParamFile: string): Promise<void> {
     log.info("Parse json results:\n", testResults);
     const results = createTestResults(testResults);
 
-
-    log.info("=====11111", results)
-
-    for ( const result in results) {
-      log.info("=====33333", results[result].Steps[0].Logs[0])
+    const reporter = new Reporter(taskId, data.FileReportPath);
+    for (const result of results) {
+      await reporter.reportTestResult(result);
     }
-    // const reporter = new Reporter(taskId, data.FileReportPath);
-    // for (const result of results) {
-    //   await reporter.reportTestResult(result);
-    // }
   }
 }
 

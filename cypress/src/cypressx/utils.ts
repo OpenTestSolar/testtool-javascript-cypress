@@ -194,26 +194,18 @@ export function generateCommands(
   filePath: string,
   testCases: string[],
   jsonName: string
-): { command: string; testIdentifiers: string[] } {
-  const testIdentifiers: string[] = [];
+): string {
 
   // 从环境变量中获取 TESTSOLAR_TTP_EXTRAARGS 值
   const extraArgs = process.env.TESTSOLAR_TTP_EXTRAARGS || "";
-  const fileName = path.basename(filePath);
-  const reportDir = fileName.replace(/\./g, '_');
   // 构建 Cypress 命令
   let command = `npx cypress run --spec "${filePath}" --reporter=mochawesome --reporter-options reportDir="",reportFilename="${jsonName}",json=true`;
 
   // 添加额外参数
   command += ` ${extraArgs}`;
 
-  // 生成测试标识符
-  for (const testCase of testCases) {
-    testIdentifiers.push(`${filePath}?${testCase}`);
-  }
-
   log.info(`Generated Cypress command: ${command}`);
-  return { command, testIdentifiers };
+  return command
 }
 
 export function parseSuiteLogs(message: string): Map<string, string> {
