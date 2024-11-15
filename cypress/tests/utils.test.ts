@@ -112,7 +112,7 @@ describe("generateCommands", () => {
     const path = "path/to/tests";
     const testCases = ["test1", "test2"];
     const jsonName = "results.json";
-    const { command } = generateCommands(path, testCases, jsonName);
+    const command = generateCommands(path, testCases, jsonName);
     expect(command).toContain("npx jest");
   });
 
@@ -120,7 +120,7 @@ describe("generateCommands", () => {
     const path = "path/to/tests";
     const testCases: string[] = [];
     const jsonName = "results.json";
-    const { command } = generateCommands(path, testCases, jsonName);
+    const command = generateCommands(path, testCases, jsonName);
     expect(command).toContain("npx jest");
   });
 });
@@ -150,45 +150,40 @@ describe("parseJsonContent", () => {
   test("should parse JSON content and return case results", () => {
     const projPath = "path/to/project";
     const data = {
-      testResults: [
+      "stats": {
+        "start": "2024-11-15T01:34:18.404Z",
+        "end": "2024-11-15T01:34:21.315Z",
+      },
+      "results": [
         {
-          assertionResults: [
+          "fullFile": "cypress/e2e/cases/WebLogin/webLogin.cy.js",
+          "suites": [
             {
-              ancestorTitles: ["test_items"],
-              failureMessages: [
-                'Error: expect(received).toEqual(expected) // deep equality\n\nExpected: "Hello, Tom!"\nReceived: "Hello, world! Tom!"\n    at Object.<anonymous> (/data/tests/items/common.test.js:6:29)\n    at Object.asyncJestTest (/data/tests/node_modules/.pnpm/jest-jasmine2@26.6.3/node_modules/jest-jasmine2/build/jasmineAsyncInstall.js:106:37)\n    at /data/tests/node_modules/.pnpm/jest-jasmine2@26.6.3/node_modules/jest-jasmine2/build/queueRunner.js:45:12\n    at new Promise (<anonymous>)\n    at mapper (/data/tests/node_modules/.pnpm/jest-jasmine2@26.6.3/node_modules/jest-jasmine2/build/queueRunner.js:28:19)\n    at /data/tests/node_modules/.pnpm/jest-jasmine2@26.6.3/node_modules/jest-jasmine2/build/queueRunner.js:75:41',
+              "tests": [
+                {
+                  "title": "web登录",
+                  "fullTitle": "WebLogin web登录",
+                  "timedOut": null,
+                  "duration": 1177,
+                  "state": "passed",
+                  "speed": "fast",
+                  "pass": true,
+                  "fail": false,
+                  "pending": false,
+                  "context": null,
+                  "code": "// 填写手机号\ncy.get('#signup-form .phone-num input').type('13713800000');\n// 获取验证码\n// cy.get('#signup-form .phone-verify .sms-code').click()\n// cy.wait(1000)\n// 填写验证码\ncy.get('#signup-form .phone-verify input').type('111222');\n// 点击登录\ncy.get('.login-box .login-btn').click();",
+                  "err": {},
+                  "uuid": "adf74827-4f81-4c6c-8f0b-78bf6bf5a681",
+                  "parentUUID": "809c985d-8b3a-4353-b6fa-17eaf2dcb934",
+                  "isHook": false,
+                  "skipped": false
+                }
               ],
-              fullName: "test_items test_greeting",
-              location: null,
-              status: "failed",
-              title: "test_greeting",
-            },
-            {
-              ancestorTitles: ["test_items"],
-              failureMessages: [""],
-              fullName: "test_items test_greeting",
-              location: null,
-              status: "pending",
-              title: "test_greeting",
-            },
-            {
-              ancestorTitles: ["test_items"],
-              failureMessages: ["123"],
-              fullName: "test_items test_greeting",
-              location: null,
-              status: "failed",
-              title: "test_greeting",
-            },
-          ],
-          endTime: 1716346166067,
-          message:
-            "  ● test_items › test_greeting\n\n    expect(received).toEqual(expected) // deep equality\n\n    Expected: \"Hello, Tom!\"\n    Received: \"Hello, world! Tom!\"\n\n      4 |   it('test_greeting', () => {\n      5 |     console.log(\"===---111222\")\n    > 6 |     expect(greeting('Tom')).toEqual('Hello, Tom!')\n        |                             ^\n      7 |   });\n      8 | })\n      9 |\n\n      at Object.<anonymous> (items/common.test.js:6:29)\n",
-          name: "/data/tests/items/common.test.js",
-          startTime: 1716346165650,
-          status: "failed",
-          summary: "",
-        },
-      ],
+              "duration": 1177
+            }
+          ]
+        }
+      ]
     };
     const result = parseJsonContent(projPath, data);
     expect(result).toEqual(expect.any(Object));

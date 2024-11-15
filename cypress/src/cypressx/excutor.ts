@@ -26,7 +26,7 @@ export async function runTestCase(runParamFile: string): Promise<void> {
     // 生成 json 文件名称
     const jsonName = path.replace(/\//g, "_") + ".json";
 
-    const { command } = generateCommands(
+    const command = generateCommands(
       path,
       testcases,
       jsonName,
