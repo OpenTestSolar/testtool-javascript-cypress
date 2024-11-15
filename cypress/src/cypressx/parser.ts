@@ -120,23 +120,3 @@ export async function loadTestCasesFromFile(filePath: string): Promise<void> {
   const reporter = new Reporter(taskId, data.FileReportPath);
   await reporter.reportLoadResult(loadResults);
 }
-
-// export async function loadTestCasesFromFile(): Promise<void> {
-
-
-//   // 读取文件并解析 JSON
-//   const testSelectors = ['cypress/e2e/cases/esscard-h5-project/packages/ess-open-auth-next/src/normal-auth.cy.js?免密显示授权 checkAppid返回值检查'];
-//   const projPath = "/root/work/testsolar/github/tools-github/1-测试目录/mi-h5-cypress";
-
-//   log.info("generate demo load result");
-//   const loadResults: LoadResult = await collectTestCases(
-//     projPath,
-//     testSelectors,
-//   );
-
-//   // const reporter = new Reporter(taskId, data.FileReportPath);
-//   // await reporter.reportLoadResult(loadResults);
-// }
-
-
-// loadTestCasesFromFile()

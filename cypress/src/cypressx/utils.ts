@@ -28,6 +28,7 @@ export interface SpecResult {
   endTime: number;
   message: string;
   content: string;
+  description: string;
 }
 
 
@@ -39,6 +40,7 @@ interface JsonData {
   results: Array<{
     fullFile: string;
     suites: Array<{
+      title: string;
       tests: Array<{
         fullTitle: string;
         duration: number;
@@ -242,6 +244,7 @@ export function parseJsonContent(
     const testPath = path.relative(projPath, fullFile);
 
     for (const suite of testResult.suites) {
+      const description = suite.title;
       for (const test of suite.tests) {
         const testName = test.fullTitle;
         const testselector = `${testPath}?${testName}`;
@@ -259,6 +262,7 @@ export function parseJsonContent(
           endTime: endTime,
           message: failureMessages,
           content: `${test.code}\n${failureMessages}`,
+          description: description,
         };
 
         if (!caseResults[testselector]) {
@@ -277,7 +281,6 @@ export function parseJsonFile(
   projPath: string,
   jsonFile: string,
 ): Record<string, SpecResult> {
-  log.debug("=======111111")
   const data = JSON.parse(fs.readFileSync(jsonFile, "utf-8"));
   log.info("--------json data:---------");
   log.info(JSON.stringify(data, null, 2));
@@ -299,51 +302,6 @@ export function createTempDirectory(): string {
 // 执行命令列表并上报结果，增加重试机制
 const execAsync: (command: string) => Promise<{ stdout: string; stderr: string }> = promisify(exec);
 
-export async function executeCommands(
-  projPath: string,
-  command: string,
-  jsonName: string,
-): Promise<Record<string, SpecResult>> {
-  const results: Record<string, SpecResult> = {};
-  log.info(`Execute final command: ${command}`);
-
-  try {
-    // 执行命令并获取输出
-    const { stdout, stderr } = await execAsync(command);
-    log.debug(`Command stdout: ${stdout}`);
-    if (stderr) {
-      log.warn(`Command stderr: ${stderr}`);
-    }
-
-    // 等待一小段时间确保文件被写入
-    await new Promise(resolve => setTimeout(resolve, 1000));
-
-    // 检查文件是否存在
-    if (!fs.existsSync(jsonName)) {
-      log.error(`File not found after command execution: ${jsonName}`);
-      throw new Error(`File not found: ${jsonName}`);
-    }
-
-    // 解析结果文件
-    const testResults = parseJsonFile(projPath, jsonName);
-    Object.assign(results, testResults);
-
-    // 检查测试结果
-    const failedTests = Object.values(testResults).filter(result => !result.result).length;
-    if (failedTests > 0) {
-      log.warn(`${failedTests} test(s) failed, but results were recorded.`);
-    }
-
-  } catch (error) {
-    if (error instanceof Error) {
-      log.error(`Failed to execute command or process results: ${error.message}`);
-    } else {
-      log.error(`Failed to execute command or process results: ${error}`);
-    }
-  }
-
-  return results;
-}
 
 export function groupTestCasesByPath(
   testcases: string[],
@@ -385,7 +343,7 @@ export function createTestResults(
   const testResults: TestResult[] = [];
 
   for (const [testCase, result] of Object.entries(output)) {
-    const test = new TestCase(encodeURI(testCase), {}); // 假设 TestCase 构造函数接受路径和空记录
+    const test = new TestCase(encodeURI(testCase), {"description": result.description}); // 假设 TestCase 构造函数接受路径和空记录
     const startTime = new Date(result.startTime).toISOString();
     const endTime = new Date(result.endTime).toISOString();
     const resultType =

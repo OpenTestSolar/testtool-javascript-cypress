@@ -10,7 +10,6 @@ import {
   parseJsonContent,
   createTempDirectory,
   parseJsonFile,
-  executeCommands,
   groupTestCasesByPath,
   createTestResults,
   generateCoverageJson, 
@@ -297,19 +296,3 @@ describe("generateCoverageJson", () => {
   });
 });
 
-describe("executeCommands", () => {
-  const projPath = "tests";
-  const jsonName = path.join(projPath, "results2.json");
-  const command = `touch ${jsonName}`; // 简单的命令来创建 jsonName 文件
-
-  test("should execute command and parse JSON file successfully", async () => {
-    // 创建一个空的 results.json 文件
-    fs.writeFileSync(jsonName, JSON.stringify({}));
-
-    const results = await executeCommands(projPath, command, jsonName);
-
-    // 检查生成的 JSON 文件是否存在
-    expect(fs.existsSync(jsonName)).toBe(true);
-  });
-
-});
