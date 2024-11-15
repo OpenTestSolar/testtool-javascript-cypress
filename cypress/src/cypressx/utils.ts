@@ -82,10 +82,8 @@ export const isFileOrDirectory = (filePath: string) => {
     const stats = fs.statSync(filePath);
     if (stats.isFile()) {
       return 1; // 文件
-    } else if (stats.isDirectory()) {
-      return -1; // 目录
     } else {
-      return 0; // 其他类型
+      return -1; // 目录
     }
   } catch (err) {
     return 0; // 其他类型

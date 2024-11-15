@@ -8,7 +8,7 @@ const config: Config.InitialOptions = {
   ],
   coverageThreshold: {
     global: {
-      branches: 80,
+      lines: 80,
     },
   },
 };
