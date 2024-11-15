@@ -31,7 +31,7 @@ export async function runTestCase(runParamFile: string): Promise<void> {
       const command = generateCommands(path, testcases, jsonName);
       
       // 执行命令，解析用例生成的 JSON 文件，上报结果
-      const { success, stdout, stderr } = await executeCommand(command);
+      const { success } = await executeCommand(command);
 
       if (!success) {
         log.warn(`Command execution failed for ${path}. Check logs for details.`);

@@ -63,13 +63,6 @@ interface Coverage {
   projectPath: ProjectPath;
 }
 
-// 定义返回类型
-interface CommandResult {
-  success: boolean;
-  stdout: string;
-  stderr: string;
-}
-
 // 执行命令并返回结果
 export async function executeCommand(command: string): Promise<{ success: boolean; stdout: string; stderr: string }> {
   try {
