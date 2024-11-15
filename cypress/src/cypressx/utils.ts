@@ -21,7 +21,7 @@ const exec = util.promisify(child_process.exec);
 
 const coverageFileName = "testsolar_coverage"
 
-interface SpecResult {
+export interface SpecResult {
   result: string;
   duration: number;
   startTime: number;
@@ -63,13 +63,18 @@ interface Coverage {
   projectPath: ProjectPath;
 }
 
+// 定义返回类型
+interface CommandResult {
+  success: boolean;
+  stdout: string;
+  stderr: string;
+}
+
 // 执行命令并返回结果
-export async function executeCommand(
-  command: string,
-): Promise<{ stdout: string; stderr: string }> {
+export async function executeCommand(command: string): Promise<{ success: boolean; stdout: string; stderr: string }> {
   try {
-    const { stdout, stderr } = await exec(command);
-    return { stdout, stderr };
+    const { stdout, stderr } = await execAsync(command);
+    return { success: true, stdout, stderr };
   } catch (error) {
     const typedError = error as Error & { stdout: string; stderr: string };
     // 记录错误日志
@@ -77,8 +82,13 @@ export async function executeCommand(
     log.error(`Error message: ${typedError.message}`);
     log.error(`stdout: ${typedError.stdout}`);
     log.error(`stderr: ${typedError.stderr}`);
-    // 抛出错误以触发重试机制
-    throw typedError;
+    
+    // 返回错误信息，而不是抛出错误
+    return {
+      success: false,
+      stdout: typedError.stdout || '',
+      stderr: typedError.stderr || typedError.message
+    };
   }
 }
 
@@ -274,6 +284,7 @@ export function parseJsonFile(
   projPath: string,
   jsonFile: string,
 ): Record<string, SpecResult> {
+  log.debug("=======111111")
   const data = JSON.parse(fs.readFileSync(jsonFile, "utf-8"));
   log.info("--------json data:---------");
   log.info(JSON.stringify(data, null, 2));
