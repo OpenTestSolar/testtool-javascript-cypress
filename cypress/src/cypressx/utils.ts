@@ -28,7 +28,7 @@ export interface SpecResult {
   endTime: number;
   message: string;
   content: string;
-  description: string;
+  description?: string;
 }
 
 
@@ -40,7 +40,7 @@ interface JsonData {
   results: Array<{
     fullFile: string;
     suites: Array<{
-      title: string;
+      title?: string;
       tests: Array<{
         fullTitle: string;
         duration: number;
@@ -343,7 +343,7 @@ export function createTestResults(
   const testResults: TestResult[] = [];
 
   for (const [testCase, result] of Object.entries(output)) {
-    const test = new TestCase(encodeURI(testCase), {"description": result.description}); // 假设 TestCase 构造函数接受路径和空记录
+    const test = new TestCase(encodeURI(testCase), {description: result.description || ""}); // 假设 TestCase 构造函数接受路径和空记录
     const startTime = new Date(result.startTime).toISOString();
     const endTime = new Date(result.endTime).toISOString();
     const resultType =
