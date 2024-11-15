@@ -265,7 +265,7 @@ export function parseJsonContent(
           startTime: startTime,
           endTime: endTime,
           message: failureMessages,
-          content: test.code + failureMessages,
+          content: `${test.code}\n${failureMessages}`,
         };
 
         if (!caseResults[testselector]) {
