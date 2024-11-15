@@ -5,7 +5,7 @@ import * as fs from "fs";
 import * as os from "os";
 import * as path from "path";
 import { v4 as uuidv4 } from 'uuid';
-import retry from 'async-retry';
+import { promisify } from 'util';
 
 import log from 'testsolar-oss-sdk/src/testsolar_sdk/logger';
 import { TestCase } from "testsolar-oss-sdk/src/testsolar_sdk/model/test";
@@ -293,6 +293,8 @@ export function createTempDirectory(): string {
 }
 
 // 执行命令列表并上报结果，增加重试机制
+const execAsync: (command: string) => Promise<{ stdout: string; stderr: string }> = promisify(exec);
+
 export async function executeCommands(
   projPath: string,
   command: string,
@@ -302,32 +304,37 @@ export async function executeCommands(
   log.info(`Execute final command: ${command}`);
 
   try {
-    await retry(async () => {
-      await executeCommand(command);
+    // 执行命令并获取输出
+    const { stdout, stderr } = await execAsync(command);
+    log.debug(`Command stdout: ${stdout}`);
+    if (stderr) {
+      log.warn(`Command stderr: ${stderr}`);
+    }
 
-      if (!fs.existsSync(jsonName)) {
-        log.error(`File not found after command execution: ${jsonName}`);
-        throw new Error(`File not found: ${jsonName}`);
-      }
-    }, {
-      retries: 3,
-      minTimeout: 2000,
-      onRetry: (error, attempt) => {
-        if (error instanceof Error) {
-          log.warn(`Retrying command (${attempt}/3): ${error.message}`);
-        } else {
-          log.warn(`Retrying command (${attempt}/3): Unknown error`);
-        }
-      },
-    });
+    // 等待一小段时间确保文件被写入
+    await new Promise(resolve => setTimeout(resolve, 1000));
 
+    // 检查文件是否存在
+    if (!fs.existsSync(jsonName)) {
+      log.error(`File not found after command execution: ${jsonName}`);
+      throw new Error(`File not found: ${jsonName}`);
+    }
+
+    // 解析结果文件
     const testResults = parseJsonFile(projPath, jsonName);
     Object.assign(results, testResults);
-  } catch (finalError) {
-    if (finalError instanceof Error) {
-      log.error(`Failed to execute command after retries: ${finalError.message}`);
+
+    // 检查测试结果
+    const failedTests = Object.values(testResults).filter(result => !result.result).length;
+    if (failedTests > 0) {
+      log.warn(`${failedTests} test(s) failed, but results were recorded.`);
+    }
+
+  } catch (error) {
+    if (error instanceof Error) {
+      log.error(`Failed to execute command or process results: ${error.message}`);
     } else {
-      log.error(`Failed to execute command after retries: ${finalError}`);
+      log.error(`Failed to execute command or process results: ${error}`);
     }
   }
 
