@@ -261,7 +261,7 @@ export function parseJsonContent(
           startTime: startTime,
           endTime: endTime,
           message: failureMessages,
-          content: `${test.code}\n${failureMessages}`,
+          content: `${test.code}\n\n${failureMessages}`,
           description: description,
         };
 
