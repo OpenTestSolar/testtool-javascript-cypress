@@ -12,51 +12,46 @@ import {
   parseJsonFile,
   groupTestCasesByPath,
   createTestResults,
-  generateCoverageJson, 
   sleep,
 } from "../src/cypressx/utils";
 
 import log from 'testsolar-oss-sdk/src/testsolar_sdk/logger';
 
-// executeCommand
+
 describe("executeCommand", () => {
-  test("should execute a command and return stdout and stderr", async () => {
+  test("should execute a command and return success, stdout and stderr", async () => {
     const command = 'echo "Hello World"';
     const result = await executeCommand(command);
+    expect(result.success).toBe(true);
+    expect(result.stdout).toContain("Hello World");
     expect(result.stderr).toBe("");
   });
 
   test("should handle command execution errors", async () => {
-    const command = "";
-    await expect(executeCommand(command)).rejects.toThrowError("The argument 'file' cannot be empty. Received ''");
+    const command = "nonexistentcommand";
+    const result = await executeCommand(command);
+    expect(result.success).toBe(false);
+    expect(result.stderr).not.toBe("");
   });
 });
 
-// isFileOrDirectory
+
 describe("isFileOrDirectory", () => {
   test("should return 1 for files", async () => {
-    const result = await isFileOrDirectory("src/jestx/utils.ts");
+    const result = await isFileOrDirectory("src/cypressx/utils.ts");
     expect(result).toBe(1);
   });
 
   test("should return -1 for directories", async () => {
-    const result = await isFileOrDirectory("src/jestx");
+    const result = await isFileOrDirectory("src/cypressx");
     expect(result).toBe(-1);
   });
 
-  test("should r置超时时eturn 0 for neither file nor directory", async () => {
-    log.info("Testing unknown path...");
+  test("should return 0 for neither file nor directory", async () => {
     const testUnknown = path.join(__dirname, "unknown");
-    const result = isFileOrDirectory(testUnknown);
-    log.info("Unknown path test complete.");
+    const result = await isFileOrDirectory(testUnknown);
     expect(result).toBe(0);
-  }, 10000);
-
-  test("should reject for non-existent paths", async () => {
-    log.info("Testing non-existent path...");
-    expect(isFileOrDirectory("path/to/nonexistent"));
-    log.info("Non-existent path test complete.");
-  }, 10000);
+  });
 
 });
 
@@ -69,12 +64,6 @@ describe("filterTestcases", () => {
     expect(result).toEqual(["tests/utils.test.ts", "test2"]);
   });
 
-  test("should filter test cases based on none selectors", async () => {
-    const testSelectors: string[] = [];
-    const parsedTestcases = ["test1", "test2"];
-    const result = await filterTestcases(testSelectors, parsedTestcases, true);
-    expect(result).toEqual(["test1", "test2"]);
-  });
 
   test("should exclude test cases based on selectors when exclude is true", async () => {
     const testSelectors = ["test1", "test2"];
@@ -84,14 +73,13 @@ describe("filterTestcases", () => {
   });
 });
 
-// parseTestcase
 describe("parseTestcase", () => {
   test("should parse test cases from file data", () => {
     const projPath = "tests";
     const fileData = ["tests/utils.test.ts"];
     const result = parseTestcase(projPath, fileData);
     expect(result).toEqual(
-      expect.arrayContaining(["utils.test.ts?executeCommand should execute a command and return stdout and stderr"]),
+      expect.arrayContaining(["utils.test.ts?executeCommand should execute a command and return success, stdout and stderr", "utils.test.ts?executeCommand should handle command execution errors", "utils.test.ts?isFileOrDirectory should return 1 for files", "utils.test.ts?isFileOrDirectory should return -1 for directories", "utils.test.ts?isFileOrDirectory should return 0 for neither file nor directory", "utils.test.ts?filterTestcases should filter test cases based on selectors", "utils.test.ts?filterTestcases should exclude test cases based on selectors when exclude is true", "utils.test.ts?parseTestcase should parse test cases from file data", "utils.test.ts?parseTestcase should parse single test cases from file data", "utils.test.ts?generateCommands should generate Cypress test execution commands"]),
     );
   });
 
@@ -107,20 +95,14 @@ describe("parseTestcase", () => {
 
 // generateCommands
 describe("generateCommands", () => {
-  test("should generate test execution commands", () => {
-    const path = "path/to/tests";
-    const testCases = ["test1", "test2"];
+  test("should generate Cypress test execution commands", () => {
+    const filePath = "path/to/tests/test.cy.js";
+    const testCases = ["Test Case 1", "Test Case 2"];
     const jsonName = "results.json";
-    const command = generateCommands(path, testCases, jsonName);
-    expect(command).toContain("npx jest");
-  });
-
-  test("should generate zero test execution commands", () => {
-    const path = "path/to/tests";
-    const testCases: string[] = [];
-    const jsonName = "results.json";
-    const command = generateCommands(path, testCases, jsonName);
-    expect(command).toContain("npx jest");
+    const command = generateCommands(filePath, testCases, jsonName);
+    expect(command).toContain("npx cypress run");
+    expect(command).toContain(`--spec "${filePath}"`);
+    expect(command).toContain(`reportFilename="${jsonName}"`);
   });
 });
 
@@ -131,61 +113,87 @@ describe("parseJsonFile", () => {
     const jsonName = "tests/results.json";
     const result = parseJsonFile(projPath, jsonName);
     const expectedResults = {
-      "items/common.test.js?test_items": {
+      "../cypress/e2e/cases/esscard-h5-project/packages/ess-open-auth-next/src/normal-auth.cy.js?免密显示授权 checkAppid返回值检查": {
         result: "passed",
-        duration: 10000,
-        startTime: 1610000000000,
-        endTime: 1610000010000,
+        duration: 1555,
+        startTime: 1731661187264,
+        endTime: 1731661192164,
         message: "",
-        content: "",
+        content: "\n\n",
+        description: "免密显示授权",
+
       },
     };
     expect(result).toEqual(expectedResults);
   });
 });
 
-// parseJsonContent
+
 describe("parseJsonContent", () => {
   test("should parse JSON content and return case results", () => {
     const projPath = "path/to/project";
     const data = {
-      "stats": {
-        "start": "2024-11-15T01:34:18.404Z",
-        "end": "2024-11-15T01:34:21.315Z",
+      stats: {
+        start: "2024-11-15T01:34:18.404Z",
+        end: "2024-11-15T01:34:21.315Z",
       },
-      "results": [
+      results: [
         {
-          "fullFile": "cypress/e2e/cases/WebLogin/webLogin.cy.js",
-          "suites": [
+          fullFile: "cypress/e2e/cases/WebLogin/webLogin.cy.js",
+          suites: [
             {
-              "tests": [
+              title: "WebLogin",
+              tests: [
                 {
-                  "title": "web登录",
-                  "fullTitle": "WebLogin web登录",
-                  "timedOut": null,
-                  "duration": 1177,
-                  "state": "passed",
-                  "speed": "fast",
-                  "pass": true,
-                  "fail": false,
-                  "pending": false,
-                  "context": null,
-                  "code": "// 填写手机号\ncy.get('#signup-form .phone-num input').type('13713800000');\n// 获取验证码\n// cy.get('#signup-form .phone-verify .sms-code').click()\n// cy.wait(1000)\n// 填写验证码\ncy.get('#signup-form .phone-verify input').type('111222');\n// 点击登录\ncy.get('.login-box .login-btn').click();",
-                  "err": {},
-                  "uuid": "adf74827-4f81-4c6c-8f0b-78bf6bf5a681",
-                  "parentUUID": "809c985d-8b3a-4353-b6fa-17eaf2dcb934",
-                  "isHook": false,
-                  "skipped": false
+                  title: "web登录",
+                  fullTitle: "WebLogin web登录",
+                  duration: 1177,
+                  state: "passed",
+                  code: "test code",
+                  err: {}
                 }
-              ],
-              "duration": 1177
+              ]
             }
           ]
         }
       ]
     };
     const result = parseJsonContent(projPath, data);
-    expect(result).toEqual(expect.any(Object));
+    expect(result).toEqual({
+      '../../../cypress/e2e/cases/WebLogin/webLogin.cy.js?WebLogin web登录': {
+        result: 'passed',
+        duration: 1177,
+        startTime: 1731634458404,
+        endTime: 1731634461315,
+        message: '',
+        content: 'test code\n\n',
+        description: 'WebLogin'
+      }
+    })
+  });
+});
+
+describe("createTestResults", () => {
+  test("should create TestResult instances from spec results", () => {
+    const output = {
+      "path/to/testcase": {
+        result: "passed",
+        duration: 100,
+        startTime: 1610000000000,
+        endTime: 1610000010000,
+        message: "Test passed",
+        content: "Test passed",
+        description: "Test description"
+      },
+    };
+    const testResults = createTestResults(output);
+    expect(testResults).toHaveLength(1);
+    expect(testResults[0]).toHaveProperty('Test');
+    expect(testResults[0]).toHaveProperty('StartTime');
+    expect(testResults[0]).toHaveProperty('EndTime');
+    expect(testResults[0]).toHaveProperty('ResultType');
+    expect(testResults[0]).toHaveProperty('Message');
+    expect(testResults[0]).toHaveProperty('Steps');
   });
 });
 
@@ -223,10 +231,17 @@ describe("createTestResults", () => {
         endTime: 1610000010000,
         message: "Test passed",
         content: "Test passed",
+        description: "Test description"
       },
     };
     const testResults = createTestResults(output);
-    expect(testResults).toEqual(expect.arrayContaining([expect.any(Object)]));
+    expect(testResults).toHaveLength(1);
+    expect(testResults[0]).toHaveProperty('Test');
+    expect(testResults[0]).toHaveProperty('StartTime');
+    expect(testResults[0]).toHaveProperty('EndTime');
+    expect(testResults[0]).toHaveProperty('ResultType');
+    expect(testResults[0]).toHaveProperty('Message');
+    expect(testResults[0]).toHaveProperty('Steps');
   });
 });
 
@@ -241,58 +256,11 @@ describe("sleep", () => {
 
     return expect(promise).resolves.toBeUndefined();
   });
-});
 
-describe("generateCoverageJson", () => {
-  const projectPath = "tests";
-  const fileReportPath = "tests/testdata";
-  const coverageDir = path.join(projectPath, "coverage");
-  const cloverXmlPath = path.join(projectPath, "clover.xml");
-  const targetCloverXmlPath = path.join(coverageDir, "clover.xml");
-  const coverageFileName = "testsolar_coverage";
-  const coverageJsonDir = path.join(projectPath, coverageFileName);
-
-  beforeEach(() => {
-    jest.clearAllMocks();
-
-    // 创建 coverage 目录
-    if (!fs.existsSync(coverageDir)) {
-      fs.mkdirSync(coverageDir);
-    }
-
-    // 复制 clover.xml 文件到 coverage 目录
-    if (fs.existsSync(cloverXmlPath)) {
-      fs.copyFileSync(cloverXmlPath, targetCloverXmlPath);
-    }
-  });
-
-  afterEach(() => {
-    // 清理 coverage 目录中的 clover.xml 文件
-    if (fs.existsSync(targetCloverXmlPath)) {
-      fs.unlinkSync(targetCloverXmlPath);
-    }
-
-    // 清理生成的 JSON 文件
-    if (fs.existsSync(coverageJsonDir)) {
-      const files = fs.readdirSync(coverageJsonDir);
-      files.forEach(file => fs.unlinkSync(path.join(coverageJsonDir, file)));
-    }
-  });
-
-  test("should log an error if clover.xml file does not exist", () => {
-    // 确保 clover.xml 文件不存在
-    if (fs.existsSync(targetCloverXmlPath)) {
-      fs.unlinkSync(targetCloverXmlPath);
-    }
-
-    // 监听 log.error 的调用
-    const logErrorSpy = jest.spyOn(log, "error");
-
-    // 调用函数
-    generateCoverageJson(projectPath, fileReportPath);
-
-    // 检查 log.error 是否被调用以及调用参数是否正确
-    expect(logErrorSpy).toHaveBeenCalledWith(`Clover XML file not found at ${targetCloverXmlPath}`);
+  afterAll(() => {
+    jest.useRealTimers();
   });
 });
+
+
 

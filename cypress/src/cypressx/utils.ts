@@ -387,54 +387,6 @@ export function createTestResults(
   return testResults;
 }
 
-
-export function generateCoverageJson(projectPath: string, fileReportPath: string) {
-  const cloverXml = path.join(projectPath, "coverage", "clover.xml");
-
-  if (fs.existsSync(cloverXml)) {
-    // 目标 clover.xml 文件路径
-    const unique_id = uuidv4();
-    const targetCloverXmlPath = path.join(fileReportPath, `${unique_id}_clover.xml`);
-
-    // 尝试复制文件
-    try {
-      fs.copyFileSync(cloverXml, targetCloverXmlPath);
-      // 删除源文件
-      fs.unlinkSync(cloverXml);
-    } catch (error) {
-      log.error(`Error moving file from ${cloverXml} to ${targetCloverXmlPath}:`, error);
-      return;
-    }
-
-    // 创建 ProjectPath 对象
-    const projPath: ProjectPath = {
-      projectPath: projectPath
-    };
-
-    // 创建 Coverage 对象
-    const coverage: Coverage = {
-      coverageFile: targetCloverXmlPath,
-      coverageType: 'clover_xml',
-      projectPath: projPath
-    };
-
-    // 在 projectPath 下的 testsolar_coverage 目录中创建一个随机名称（UUID）的 JSON 文件
-    const testsolarCoverageDir = path.join(projectPath, coverageFileName);
-    if (!fs.existsSync(testsolarCoverageDir)) {
-      fs.mkdirSync(testsolarCoverageDir);
-    }
-
-    const randomFileName = `${unique_id}.json`;
-    const randomFilePath = path.join(testsolarCoverageDir, randomFileName);
-    
-    fs.writeFileSync(randomFilePath, JSON.stringify(coverage, null, 2));
-    
-    log.info(`Coverage data written to ${randomFilePath}`);
-  } else {
-    log.error(`Clover XML file not found at ${cloverXml}`);
-  }
-}
-
 // sleep 函数用于等待指定的时间（以毫秒为单位）
 export function sleep(ms: number): Promise<void> {
   return new Promise(resolve => setTimeout(resolve, ms));
