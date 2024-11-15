@@ -44,4 +44,4 @@ export async function runTestCase(runParamFile: string): Promise<void> {
 }
 
 
-runTestCase("/root/work/testsolar/github/tools-github/1-测试目录/1.json")
+// runTestCase("/root/work/testsolar/github/tools-github/1-测试目录/1.json")
