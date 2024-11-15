@@ -4,7 +4,6 @@ import * as util from "util";
 import * as fs from "fs";
 import * as os from "os";
 import * as path from "path";
-import { v4 as uuidv4 } from 'uuid';
 import { promisify } from 'util';
 
 import log from 'testsolar-oss-sdk/src/testsolar_sdk/logger';
@@ -19,7 +18,6 @@ import {
 
 const exec = util.promisify(child_process.exec);
 
-const coverageFileName = "testsolar_coverage"
 
 export interface SpecResult {
   result: string;
@@ -55,15 +53,6 @@ interface JsonData {
   }>;
 }
 
-interface ProjectPath {
-  projectPath: string;
-}
-
-interface Coverage {
-  coverageFile: string;
-  coverageType: string;
-  projectPath: ProjectPath;
-}
 
 // 执行命令并返回结果
 export async function executeCommand(command: string): Promise<{ success: boolean; stdout: string; stderr: string }> {
