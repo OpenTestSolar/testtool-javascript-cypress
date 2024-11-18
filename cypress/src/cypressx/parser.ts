@@ -68,6 +68,12 @@ export async function collectTestCases(
       (error as Error).message ||
       "Parse json file error, please check the file content!";
     console.error(errorMessage);
+
+    // 将 testSelectors 中的每个元素作为 Name 添加到 LoadError 中
+    testSelectors.forEach(selector => {
+      const loadErrorInstance = new LoadError(selector, errorMessage);
+      result.LoadErrors.push(loadErrorInstance);
+    });
   }
 
   return result;
