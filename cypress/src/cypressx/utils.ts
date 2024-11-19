@@ -172,7 +172,7 @@ export const parseTestcase = (
       if (itMatch) {
         if (describeContent) {
           const testcase = `${relativePath.replace(projPath, "")}?${describeContent} ${itMatch[2]}`;
-          testcases.push(encodeURI(testcase));
+          testcases.push(testcase);
         }
       }
     }

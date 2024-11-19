@@ -75,6 +75,15 @@ describe("filterTestcases", () => {
 
 describe("parseTestcase", () => {
 
+  test("should parse test cases from file data", () => {
+    const projPath = "tests";
+    const fileData = ["tests/utils.test.ts"];
+    const result = parseTestcase(projPath, fileData);
+    expect(result).toEqual(
+      expect.arrayContaining(["utils.test.ts?executeCommand should execute a command and return success, stdout and stderr", "utils.test.ts?executeCommand should handle command execution errors", "utils.test.ts?isFileOrDirectory should return 1 for files", "utils.test.ts?isFileOrDirectory should return -1 for directories", "utils.test.ts?isFileOrDirectory should return 0 for neither file nor directory", "utils.test.ts?filterTestcases should filter test cases based on selectors", "utils.test.ts?filterTestcases should exclude test cases based on selectors when exclude is true", "utils.test.ts?parseTestcase should parse test cases from file data", "utils.test.ts?parseTestcase should parse single test cases from file data", "utils.test.ts?generateCommands should generate Cypress test execution commands"]),
+    );
+  });
+
   test("should parse single test cases from file data", () => {
     const projPath = "tests";
     const fileData = ["tests/demo.test.ts"];
