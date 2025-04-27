@@ -14,6 +14,8 @@ import {
   TestCaseLog,
   LogLevel,
   ResultType,
+  AttachmentType,
+  Attachment,
 } from "testsolar-oss-sdk/src/testsolar_sdk/model/testresult";
 
 const exec = util.promisify(child_process.exec);
@@ -27,6 +29,7 @@ export interface SpecResult {
   message: string;
   content: string;
   description?: string;
+  attachments?: Attachment[];
 }
 
 
@@ -222,6 +225,10 @@ export function parseJsonContent(
 ): Record<string, SpecResult> {
   const caseResults: Record<string, SpecResult> = {};
 
+  // 扫描 Cypress 截图
+  const screenshots = scanCypressScreenshots(process.cwd());
+  console.log(`发现用例截图数量: ${Object.keys(screenshots).length}`);
+
   // 将字符串时间转换为 Unix 时间戳
   const startTime = new Date(data.stats.start).getTime();
   const endTime = new Date(data.stats.end).getTime();
@@ -250,12 +257,37 @@ export function parseJsonContent(
           message: failureMessages,
           content: `${test.code}\n\n${failureMessages}`,
           description: description,
+          attachments: [], // 默认为每个用例初始化空的attachments数组
         };
+
+        // 只有测试失败时才添加截图
+        if (result === "failed") {
+          // 遍历截图字典，判断键是否包含在testselector中
+          for (const screenshotKey in screenshots) {
+            if (testselector.includes(screenshotKey)) {
+              // 添加截图到attachments
+              const attachment = new Attachment(
+                "测试失败截图",
+                screenshots[screenshotKey],
+                AttachmentType.FILE,
+              );
+              
+              specResult.attachments!.push(attachment);
+              console.log(`为失败用例 ${testselector} 添加了截图: ${screenshots[screenshotKey]}`);
+            }
+          }
+        }
 
         if (!caseResults[testselector]) {
           caseResults[testselector] = specResult;
         } else {
           caseResults[testselector].message += "\n" + specResult.message;
+          
+          // 合并可能存在的attachments
+          if (specResult.attachments && specResult.attachments.length > 0) {
+            // 因为attachments现在总是被初始化，所以不需要检查是否为undefined
+            caseResults[testselector].attachments!.push(...specResult.attachments);
+          }
         }
       }
     }
@@ -337,13 +369,14 @@ export function createTestResults(
       result.result === "passed" ? ResultType.SUCCEED : ResultType.FAILED;
     const message = result.message || "";
     const content = result.content || "";
+    const attachments = result.attachments || [];
 
     // 创建 TestCaseLog 实例
     const testLog = new TestCaseLog(
       startTime, // 使用结束时间作为日志时间
       result.result === "passed" ? LogLevel.INFO : LogLevel.ERROR,
       content,
-      [], // 空附件数组
+      attachments,
       undefined, // 无断言错误
       undefined, // 无运行时错误
     );
@@ -377,4 +410,37 @@ export function createTestResults(
 // sleep 函数用于等待指定的时间（以毫秒为单位）
 export function sleep(ms: number): Promise<void> {
   return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+export function scanCypressScreenshots(projPath: string): Record<string, string> {
+  const screenshotsDir = path.join(projPath, 'cypress', 'screenshots');
+  const result: Record<string, string> = {};
+
+  // 检查截图目录是否存在
+  if (!fs.existsSync(screenshotsDir)) {
+    console.warn(`Cypress screenshots directory not found: ${screenshotsDir}`);
+    return result;
+  }
+
+  // 遍历截图目录
+  const specDirs = fs.readdirSync(screenshotsDir);
+  for (const specDir of specDirs) {
+    const specDirPath = path.join(screenshotsDir, specDir);
+    const screenshotFiles = fs.readdirSync(specDirPath);
+
+    // 处理每个截图文件
+    for (const file of screenshotFiles) {
+      if (file.endsWith('.png')) {
+        // 解析文件名中的 describe 和 it 信息
+        const [describe, it] = file.replace(' (failed).png', '').split(' -- ');
+        const key = `${specDir}?${describe} ${it}`;
+        const fullPath = path.join(specDirPath, file);
+
+        // 添加到结果字典
+        result[key] = fullPath;
+      }
+    }
+  }
+
+  return result;
 }
