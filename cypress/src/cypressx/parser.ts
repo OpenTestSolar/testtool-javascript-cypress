@@ -79,28 +79,37 @@ export async function collectTestCases(
   return result;
 }
 
-// 扫描目录中的Cypress测试文件
+// 扫描目录中的Cypress测试文件（排除node_modules）
 function scanCypressTestFiles(directory: string): string[] {
   const testCases: string[] = [];
 
   function readDirRecursive(dir: string) {
-    const files = fs.readdirSync(dir);
+    // 如果路径中包含node_modules，则跳过该目录
+    if (dir.includes("node_modules")) {
+      return;
+    }
 
-    files.forEach((file) => {
-      const fullPath = path.join(dir, file);
-      const stat = fs.statSync(fullPath);
+    try {
+      const files = fs.readdirSync(dir);
 
-      if (stat.isDirectory()) {
-        readDirRecursive(fullPath);
-      } else if (file.endsWith(".cy.js") || file.endsWith(".cy.ts")) {
-        const content = fs.readFileSync(fullPath, "utf-8");
-        if (cypressTestRegex.test(content)) {
-          testCases.push(fullPath);
+      files.forEach((file) => {
+        const fullPath = path.join(dir, file);
+        const stat = fs.statSync(fullPath);
+
+        if (stat.isDirectory()) {
+          readDirRecursive(fullPath);
+        } else if (file.endsWith(".cy.js") || file.endsWith(".cy.ts")) {
+          const content = fs.readFileSync(fullPath, "utf-8");
+          if (cypressTestRegex.test(content)) {
+            testCases.push(fullPath);
+          }
+          // 重置正则表达式的lastIndex，以便下次使用
+          cypressTestRegex.lastIndex = 0;
         }
-        // 重置正则表达式的lastIndex，以便下次使用
-        cypressTestRegex.lastIndex = 0;
-      }
-    });
+      });
+    } catch (error) {
+      console.error(`Error reading directory ${dir}:`, error);
+    }
   }
 
   readDirRecursive(directory);
