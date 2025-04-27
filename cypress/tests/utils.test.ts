@@ -1,6 +1,9 @@
 import { describe, expect, test, beforeEach, afterEach, jest } from "@jest/globals";
 import * as fs from "fs";
 import * as path from "path";
+import { tmpdir } from 'os';
+import { promisify } from 'util';
+
 import {
   executeCommand,
   isFileOrDirectory,
@@ -13,10 +16,15 @@ import {
   groupTestCasesByPath,
   createTestResults,
   sleep,
+  scanCypressScreenshots,
 } from "../src/cypressx/utils";
 
 import log from 'testsolar-oss-sdk/src/testsolar_sdk/logger';
 
+
+const mkdtemp = promisify(fs.mkdtemp);
+const writeFile = promisify(fs.writeFile);
+const rmdir = promisify(fs.rm);
 
 describe("executeCommand", () => {
   test("should execute a command and return success, stdout and stderr", async () => {
@@ -122,6 +130,7 @@ describe("parseJsonFile", () => {
         message: "",
         content: "\n\n",
         description: "免密显示授权",
+        attachments: []
 
       },
     };
@@ -168,7 +177,8 @@ describe("parseJsonContent", () => {
         endTime: 1731634461315,
         message: '',
         content: 'test code\n\n',
-        description: 'WebLogin'
+        description: 'WebLogin',
+        attachments: []
       }
     })
   });
@@ -264,4 +274,78 @@ describe("sleep", () => {
 });
 
 
+describe('scanCypressScreenshots', () => {
+  let tempDir: string;
+  let projPath: string;
 
+  beforeAll(async () => {
+    // 创建临时项目目录结构
+    tempDir = await mkdtemp(path.join(tmpdir(), 'cypress-test-'));
+    projPath = path.join(tempDir, 'project');
+    
+    // 创建标准的 Cypress 目录结构
+    fs.mkdirSync(path.join(projPath, 'cypress', 'screenshots'), { recursive: true });
+  });
+
+  afterAll(async () => {
+    await rmdir(tempDir, { recursive: true });
+  });
+
+  it('应该返回空对象当截图目录不存在', () => {
+    const nonExistPath = path.join(projPath, 'non-exist');
+    const result = scanCypressScreenshots(nonExistPath);
+    
+    expect(result).toEqual({});
+  });
+
+  it('应该返回空对象当目录存在但没有截图', () => {
+    const result = scanCypressScreenshots(projPath);
+    expect(result).toEqual({});
+  });
+
+  it('应该正确解析单spec目录的截图文件', async () => {
+    // 准备测试数据
+    const specDir = path.join(projPath, 'cypress', 'screenshots', 'login.spec.ts');
+    fs.mkdirSync(specDir, { recursive: true });
+    
+    // 创建测试截图文件
+    await writeFile(
+      path.join(specDir, 'Login Page -- should display error message (failed).png'),
+      'mock'
+    );
+    await writeFile(
+      path.join(specDir, 'Login Page -- should login successfully.png'),
+      'mock'
+    );
+
+    // 执行测试
+    const result = scanCypressScreenshots(projPath);
+
+    // 验证结果
+    expect(Object.keys(result)).toHaveLength(2);
+  });
+
+  it('应该处理多个spec目录的情况', async () => {
+    // 准备测试数据
+    const specDirs = [
+      path.join(projPath, 'cypress', 'screenshots', 'login.spec.ts'),
+      path.join(projPath, 'cypress', 'screenshots', 'profile.spec.ts')
+    ];
+    
+    await Promise.all(specDirs.map(async (dir) => {
+      fs.mkdirSync(dir, { recursive: true });
+      await writeFile(
+        path.join(dir, 'Test Suite -- test case (failed).png'),
+        'mock'
+      );
+    }));
+
+    // 执行测试
+    const result = scanCypressScreenshots(projPath);
+
+    // 验证结果
+    expect(Object.keys(result)).toHaveLength(4);
+    expect(result['login.spec.ts?Test Suite test case']).toBeDefined();
+    expect(result['profile.spec.ts?Test Suite test case']).toBeDefined();
+  });
+});

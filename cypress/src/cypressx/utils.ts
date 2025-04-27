@@ -412,7 +412,7 @@ export function sleep(ms: number): Promise<void> {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-function scanCypressScreenshots(projPath: string): Record<string, string> {
+export function scanCypressScreenshots(projPath: string): Record<string, string> {
   const screenshotsDir = path.join(projPath, 'cypress', 'screenshots');
   const result: Record<string, string> = {};
 
