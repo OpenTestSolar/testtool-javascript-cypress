@@ -36,8 +36,18 @@ export async function collectTestCases(
     const cypressTestCases = scanCypressTestFiles(projPath);
     log.info("Cypress test cases file: ", cypressTestCases);
 
-    // 解析所有用例
-    const loadCaseResult = parseTestcase(projPath, cypressTestCases);
+    // 默认true， 有值则为false
+    const fileMode = !process.env.TESTSOLAR_TTP_FILEMODE;
+
+    let loadCaseResult;
+    if (fileMode) {
+      log.info("TESTSOLAR_TTP_FILEMODE is set, using file paths directly without parsing");
+      loadCaseResult = cypressTestCases;
+    } else {
+      // 如果环境变量未设置，则按原来的方式解析用例
+      loadCaseResult = parseTestcase(projPath, cypressTestCases);
+    }
+
     log.info("Cypress testtool parse all testcases: \n", loadCaseResult);
 
     // 过滤用例
@@ -59,8 +69,15 @@ export async function collectTestCases(
 
     // 提取用例数据
     filterResult.forEach((filteredTestCase: string) => {
-      const [path, descAndName] = filteredTestCase.split("?");
-      const test = new TestCase(`${path}?${descAndName}`, {});
+      let test
+      if (fileMode) {
+        // 去掉前缀 projectPath，获取相对路径
+        const relativePath = path.relative(projPath, filteredTestCase);
+        test = new TestCase(relativePath, {});
+      } else {
+        const [path, descAndName] = filteredTestCase.split("?");
+        test = new TestCase(`${path}?${descAndName}`, {});
+      }
       result.Tests.push(test);
     });
   } catch (error: unknown) {
