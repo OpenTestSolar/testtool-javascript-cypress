@@ -16,8 +16,6 @@ import { TestCase } from "testsolar-oss-sdk/src/testsolar_sdk/model/test";
 
 import Reporter from "testsolar-oss-sdk/src/testsolar_sdk/reporter";
 
-// 定义正则表达式来匹配Cypress测试用例
-const cypressTestRegex = /it\(['"`](.*?)['"`],\s*\(.*?\)\s*=>/g;
 
 export async function collectTestCases(
   projPath: string,
@@ -99,6 +97,8 @@ export async function collectTestCases(
 // 扫描目录中的Cypress测试文件（排除node_modules）
 function scanCypressTestFiles(directory: string): string[] {
   const testCases: string[] = [];
+  // 新的正则表达式，匹配it后面跟着单引号、双引号或反引号的模式
+  const testPattern = /it\(['"`]/;
 
   function readDirRecursive(dir: string) {
     // 如果路径中包含node_modules，则跳过该目录
@@ -117,11 +117,10 @@ function scanCypressTestFiles(directory: string): string[] {
           readDirRecursive(fullPath);
         } else if (file.endsWith(".cy.js") || file.endsWith(".cy.ts")) {
           const content = fs.readFileSync(fullPath, "utf-8");
-          if (cypressTestRegex.test(content)) {
+          if (testPattern.test(content)) {
             testCases.push(fullPath);
           }
-          // 重置正则表达式的lastIndex，以便下次使用
-          cypressTestRegex.lastIndex = 0;
+          // 不需要重置lastIndex，因为没有使用g标志
         }
       });
     } catch (error) {
