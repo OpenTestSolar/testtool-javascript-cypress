@@ -229,6 +229,9 @@ export function parseJsonContent(
   const screenshots = scanCypressScreenshots(process.cwd());
   console.log(`发现用例截图数量: ${Object.keys(screenshots).length}`);
 
+  const videos = scanCypressVideos(process.cwd());
+  console.log(`发现用例视频数量: ${Object.keys(videos).length}`);
+
   // 将字符串时间转换为 Unix 时间戳
   const startTime = new Date(data.stats.start).getTime();
   const endTime = new Date(data.stats.end).getTime();
@@ -274,6 +277,21 @@ export function parseJsonContent(
               
               specResult.attachments!.push(attachment);
               console.log(`为失败用例 ${testselector} 添加了截图: ${screenshots[screenshotKey]}`);
+            }
+          }
+
+          // 遍历视频字典，判断键是否包含在testselector中
+          for (const videoKey in videos) {
+            if (testselector.includes(videoKey)) {
+              // 添加视频到attachments
+              const attachment = new Attachment(
+                "测试失败视频",
+                videos[videoKey],
+                AttachmentType.FILE,
+              );
+              
+              specResult.attachments!.push(attachment);
+              console.log(`为失败用例 ${testselector} 添加了视频: ${videos[videoKey]}`);
             }
           }
         }
@@ -434,6 +452,40 @@ export function scanCypressScreenshots(projPath: string): Record<string, string>
         // 解析文件名中的 describe 和 it 信息
         const [describe, it] = file.replace(' (failed).png', '').split(' -- ');
         const key = `${specDir}?${describe} ${it}`;
+        const fullPath = path.join(specDirPath, file);
+
+        // 添加到结果字典
+        result[key] = fullPath;
+      }
+    }
+  }
+
+  return result;
+}
+
+
+
+export function scanCypressVideos(projPath: string): Record<string, string> {
+  const videosDir = path.join(projPath, 'cypress', 'videos');
+  const result: Record<string, string> = {};
+
+  // 检查视频目录是否存在
+  if (!fs.existsSync(videosDir)) {
+    console.warn(`Cypress videos directory not found: ${videosDir}`);
+    return result;
+  }
+
+  // 遍历视频目录
+  const specDirs = fs.readdirSync(videosDir);
+  for (const specDir of specDirs) {
+    const specDirPath = path.join(videosDir, specDir);
+    const videoFiles = fs.readdirSync(specDirPath);
+    
+    // 处理每个视频文件
+    for (const file of videoFiles) {
+      if (file.endsWith('.mp4')) {
+        // 解析文件名中的 describe 和 it 信息
+        const key = file.replace('.mp4', '');
         const fullPath = path.join(specDirPath, file);
 
         // 添加到结果字典

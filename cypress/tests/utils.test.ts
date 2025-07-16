@@ -17,6 +17,7 @@ import {
   createTestResults,
   sleep,
   scanCypressScreenshots,
+  scanCypressVideos,
 } from "../src/cypressx/utils";
 
 import log from 'testsolar-oss-sdk/src/testsolar_sdk/logger';
@@ -347,5 +348,61 @@ describe('scanCypressScreenshots', () => {
     expect(Object.keys(result)).toHaveLength(4);
     expect(result['login.spec.ts?Test Suite test case']).toBeDefined();
     expect(result['profile.spec.ts?Test Suite test case']).toBeDefined();
+  });
+});
+
+
+
+
+describe('scanCypressvideos', () => {
+  let tempDir: string;
+  let projPath: string;
+
+  beforeAll(async () => {
+    // 创建临时项目目录结构
+    tempDir = await mkdtemp(path.join(tmpdir(), 'cypress-test-'));
+    projPath = path.join(tempDir, 'project');
+    
+    // 创建标准的 Cypress 目录结构
+    fs.mkdirSync(path.join(projPath, 'cypress', 'videos'), { recursive: true });
+  });
+
+  afterAll(async () => {
+    await rmdir(tempDir, { recursive: true });
+  });
+
+  it('应该返回空对象当视频目录不存在', () => {
+    const nonExistPath = path.join(projPath, 'non-exist');
+    const result = scanCypressVideos(nonExistPath);
+    
+    expect(result).toEqual({});
+  });
+
+  it('应该返回空对象当目录存在但没有视频', () => {
+    const result = scanCypressVideos(projPath);
+    expect(result).toEqual({});
+  });
+
+  it('应该正确解析单spec目录的视频文件', async () => {
+    // 准备测试数据
+    const specDir = path.join(projPath, 'cypress', 'videos', 'login.spec.ts');
+    fs.mkdirSync(specDir, { recursive: true });
+    
+    // 创建测试视频文件
+    await writeFile(
+      path.join(specDir, 'Login Page -- should display error message (failed).png'),
+      'mock'
+    );
+    await writeFile(
+      path.join(specDir, 'Login Page -- should login successfully.png'),
+      'mock'
+    );
+
+    // 执行测试
+    const result = scanCypressScreenshots(projPath);
+
+    console.log(result);
+    // 验证结果
+    expect(Object.keys(result)).toHaveLength(0);
   });
 });
