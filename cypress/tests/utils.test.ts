@@ -351,9 +351,6 @@ describe('scanCypressScreenshots', () => {
   });
 });
 
-
-
-
 describe('scanCypressvideos', () => {
   let tempDir: string;
   let projPath: string;
