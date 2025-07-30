@@ -229,8 +229,8 @@ export function parseJsonContent(
   const screenshots = scanCypressScreenshots(process.cwd());
   console.log(`发现用例截图数量: ${Object.keys(screenshots).length}`);
 
-  const videos = scanCypressVideos(process.cwd());
-  console.log(`发现用例视频数量: ${Object.keys(videos).length}`);
+  const videos = scanCypressVideos();
+  console.log('视频文件映射:', videos); 
 
   // 将字符串时间转换为 Unix 时间戳
   const startTime = new Date(data.stats.start).getTime();
@@ -465,34 +465,47 @@ export function scanCypressScreenshots(projPath: string): Record<string, string>
 
 
 
-export function scanCypressVideos(projPath: string): Record<string, string> {
-  const videosDir = path.join(projPath, 'cypress', 'videos');
+export function scanCypressVideos(cypressDir: string = './cypress'): Record<string, string> {
   const result: Record<string, string> = {};
 
-  // 检查视频目录是否存在
-  if (!fs.existsSync(videosDir)) {
-    console.warn(`Cypress videos directory not found: ${videosDir}`);
-    return result;
-  }
+  function traverseDirectory(currentDir: string): void {
+    try {
+      const files = fs.readdirSync(currentDir);
 
-  // 遍历视频目录
-  const specDirs = fs.readdirSync(videosDir);
-  for (const specDir of specDirs) {
-    const specDirPath = path.join(videosDir, specDir);
-    const videoFiles = fs.readdirSync(specDirPath);
-    
-    // 处理每个视频文件
-    for (const file of videoFiles) {
-      if (file.endsWith('.mp4')) {
-        // 解析文件名中的 describe 和 it 信息
-        const key = file.replace('.mp4', '');
-        const fullPath = path.join(specDirPath, file);
+      for (const file of files) {
+        const fullPath = path.join(currentDir, file);
+        const stat = fs.statSync(fullPath);
 
-        // 添加到结果字典
-        result[key] = fullPath;
+        if (stat.isDirectory()) {
+          // 递归遍历子目录
+          traverseDirectory(fullPath);
+        } else if (stat.isFile() && file.endsWith('.mp4')) {
+          // 找到mp4文件，检查对应的源文件是否存在
+          const mp4Path = fullPath;
+          const sourceFileName = file.replace('.mp4', ''); // 去掉.mp4后缀
+          const sourcePath = path.join(currentDir, sourceFileName);
+
+          // 检查源文件是否存在
+          if (fs.existsSync(sourcePath)) {
+            // 使用相对路径作为key和value
+            const relativeSourcePath = path.relative(process.cwd(), sourcePath);
+            const relativeMp4Path = path.relative(process.cwd(), mp4Path);
+            
+            result[relativeSourcePath] = relativeMp4Path;
+          }
+        }
       }
+    } catch (error) {
+      console.warn(`遍历目录 ${currentDir} 时出错:`, error);
     }
   }
 
+  // 检查cypress目录是否存在
+  if (!fs.existsSync(cypressDir)) {
+    console.warn(`Cypress目录不存在: ${cypressDir}`);
+    return result;
+  }
+
+  traverseDirectory(cypressDir);
   return result;
 }

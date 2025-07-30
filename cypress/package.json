@@ -1,6 +1,6 @@
 {
   "name": "testsolar-oss-cypress",
-  "version": "0.0.6",
+  "version": "0.0.7",
   "description": "TestSolar support for cypress tool",
   "main": "main.js",
   "scripts": {
