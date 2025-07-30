@@ -229,7 +229,7 @@ export function parseJsonContent(
   const screenshots = scanCypressScreenshots(process.cwd());
   console.log(`发现用例截图数量: ${Object.keys(screenshots).length}`);
 
-  const videos = findCypressVideoFiles();
+  const videos = scanCypressVideos();
   console.log('视频文件映射:', videos); 
 
   // 将字符串时间转换为 Unix 时间戳
@@ -465,7 +465,7 @@ export function scanCypressScreenshots(projPath: string): Record<string, string>
 
 
 
-export function findCypressVideoFiles(cypressDir: string = './cypress'): Record<string, string> {
+export function scanCypressVideos(cypressDir: string = './cypress'): Record<string, string> {
   const result: Record<string, string> = {};
 
   function traverseDirectory(currentDir: string): void {
