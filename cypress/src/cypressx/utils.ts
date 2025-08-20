@@ -487,11 +487,11 @@ export function scanCypressVideos(cypressDir: string = './cypress'): Record<stri
 
           // 检查源文件是否存在
           if (fs.existsSync(sourcePath)) {
-            // 使用相对路径作为key和value
+            // 使用绝对路径作为key和value
             const relativeSourcePath = path.relative(process.cwd(), sourcePath);
-            const relativeMp4Path = path.relative(process.cwd(), mp4Path);
+            const absoluteMp4Path = path.resolve(mp4Path);
             
-            result[relativeSourcePath] = relativeMp4Path;
+            result[relativeSourcePath] = absoluteMp4Path;
           }
         }
       }
