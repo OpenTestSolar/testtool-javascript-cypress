@@ -1,10 +1,8 @@
 import * as process from "process";
 import * as child_process from "child_process";
-import * as util from "util";
 import * as fs from "fs";
 import * as os from "os";
 import * as path from "path";
-import { promisify } from 'util';
 
 import log from 'testsolar-oss-sdk/src/testsolar_sdk/logger';
 import { TestCase } from "testsolar-oss-sdk/src/testsolar_sdk/model/test";
@@ -18,9 +16,6 @@ import {
   Attachment,
 } from "testsolar-oss-sdk/src/testsolar_sdk/model/testresult";
 
-const exec = util.promisify(child_process.exec);
-
-
 export interface SpecResult {
   result: string;
   duration: number;
@@ -31,7 +26,6 @@ export interface SpecResult {
   description?: string;
   attachments?: Attachment[];
 }
-
 
 interface JsonData {
   stats: {
@@ -56,27 +50,114 @@ interface JsonData {
   }>;
 }
 
-
-// 执行命令并返回结果
-export async function executeCommand(command: string): Promise<{ success: boolean; stdout: string; stderr: string }> {
-  try {
-    const { stdout, stderr } = await execAsync(command);
-    return { success: true, stdout, stderr };
-  } catch (error) {
-    const typedError = error as Error & { stdout: string; stderr: string };
-    // 记录错误日志
-    log.error(`Error executing command: ${command}`);
-    log.error(`Error message: ${typedError.message}`);
-    log.error(`stdout: ${typedError.stdout}`);
-    log.error(`stderr: ${typedError.stderr}`);
+/**
+ * 执行命令并实时输出日志
+ * @param command 要执行的命令
+ * @param realtime 是否实时输出（默认 true）
+ * @returns Promise<{ success: boolean; stdout: string; stderr: string }>
+ */
+export async function executeCommand(
+  command: string,
+  realtime: boolean = true
+): Promise<{ success: boolean; stdout: string; stderr: string }> {
+  return new Promise((resolve) => {
+    log.info(`执行命令: ${command}`);
     
-    // 返回错误信息，而不是抛出错误
-    return {
-      success: false,
-      stdout: typedError.stdout || '',
-      stderr: typedError.stderr || typedError.message
+    // 使用 spawn 而不是 exec，支持流式输出
+    const child = child_process.spawn(command, {
+      shell: true,
+      stdio: realtime ? ['inherit', 'pipe', 'pipe'] : 'pipe',
+      env: process.env
+    });
+
+    let stdout = '';
+    let stderr = '';
+    let resolved = false;
+
+    // 安全的 resolve 函数，防止多次调用
+    const resolveOnce = (result: { success: boolean; stdout: string; stderr: string }) => {
+      if (!resolved) {
+        resolved = true;
+        resolve(result);
+      }
     };
-  }
+
+    // 监听标准输出
+    if (child.stdout) {
+      child.stdout.on('data', (data: Buffer) => {
+        const text = data.toString();
+        stdout += text;
+        
+        if (realtime) {
+          // 方案1：直接输出（保留 Cypress 的原始格式和颜色）
+          process.stdout.write(text);
+          
+          // 方案2：或者按行输出到日志系统（二选一）
+          // const lines = text.split('\n');
+          // for (const line of lines) {
+          //   if (line.trim()) {
+          //     log.info(line);
+          //   }
+          // }
+        }
+      });
+    }
+
+    // 监听错误输出
+    if (child.stderr) {
+      child.stderr.on('data', (data: Buffer) => {
+        const text = data.toString();
+        stderr += text;
+        
+        if (realtime) {
+          // 直接输出到 stderr
+          process.stderr.write(text);
+          
+          // 或者按行记录日志
+          // const lines = text.split('\n');
+          // for (const line of lines) {
+          //   if (line.trim()) {
+          //     if (line.toLowerCase().includes('warning')) {
+          //       log.warn(line);
+          //     } else {
+          //       log.error(line);
+          //     }
+          //   }
+          // }
+        }
+      });
+    }
+
+    // 监听进程退出
+    child.on('close', (code: number | null) => {
+      const success = code === 0;
+      const exitMsg = success 
+        ? `命令执行成功 (exit code: ${code})`
+        : `命令执行失败 (exit code: ${code})`;
+      
+      if (success) {
+        log.info(exitMsg);
+      } else {
+        log.error(exitMsg);
+      }
+      
+      resolveOnce({
+        success,
+        stdout,
+        stderr
+      });
+    });
+
+    // 监听错误事件
+    child.on('error', (error: Error) => {
+      log.error(`命令执行出错: ${error.message}`);
+      resolveOnce({
+        success: false,
+        stdout,
+        stderr: stderr || error.message
+      });
+    });
+  });
 }
 
 // 判断路径是文件还是目录
@@ -336,8 +417,7 @@ export function createTempDirectory(): string {
   return tempDirectory;
 }
 
-// 执行命令列表并上报结果，增加重试机制
-const execAsync: (command: string) => Promise<{ stdout: string; stderr: string }> = promisify(exec);
+
 
 
 export function groupTestCasesByPath(
